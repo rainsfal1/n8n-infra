@@ -23,22 +23,10 @@ jobs:
           for file in ${{ inputs.workflows_path }}/*.json; do
             WORKFLOW_ID=$(jq -r '.id' "$file")
             echo "Syncing $file (id: $WORKFLOW_ID)"
-            
-            # Try to update the workflow first (PUT)
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$N8N_HOST/api/v1/workflows/$WORKFLOW_ID" \
+            curl -s -X PUT "$N8N_HOST/api/v1/workflows/$WORKFLOW_ID" \
               -H "X-N8N-API-KEY: $N8N_API_KEY" \
               -H "Content-Type: application/json" \
-              -d @"$file")
-              
-            if [ "$HTTP_STATUS" == "404" ] || [ "$HTTP_STATUS" == "400" ]; then
-              echo "Workflow not found or invalid id, creating new workflow via POST..."
-              curl -s -f -X POST "$N8N_HOST/api/v1/workflows" \
-                -H "X-N8N-API-KEY: $N8N_API_KEY" \
-                -H "Content-Type: application/json" \
-                -d @"$file"
-            else
-              echo "Updated successfully (HTTP $HTTP_STATUS)"
-            fi
+              -d @"$file"
           done
         env:
           N8N_HOST: ${{ secrets.N8N_HOST }}
