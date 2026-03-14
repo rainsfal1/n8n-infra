@@ -1,0 +1,33 @@
+name: Sync n8n workflows (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      workflows_path:
+        type: string
+        default: 'n8n/workflows'
+    secrets:
+      N8N_HOST:
+        required: true
+      N8N_API_KEY:
+        required: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push workflows to n8n
+        run: |
+          for file in ${{ inputs.workflows_path }}/*.json; do
+            WORKFLOW_ID=$(jq -r '.id' "$file")
+            echo "Syncing $file (id: $WORKFLOW_ID)"
+            curl -s -X PUT "$N8N_HOST/api/v1/workflows/$WORKFLOW_ID" \
+              -H "X-N8N-API-KEY: $N8N_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d @"$file"
+          done
+        env:
+          N8N_HOST: ${{ secrets.N8N_HOST }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
